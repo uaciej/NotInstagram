@@ -3,6 +3,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from rest_framework.authtoken.models import Token
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -29,6 +30,7 @@ class AccountManager(BaseUserManager):
         user = self.model(email=email, **other_fields)
         user.set_password(password)
         user.save()
+        Token.objects.create(user=user)
         return user
 
 class Tier(models.Model):
