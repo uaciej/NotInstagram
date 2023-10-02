@@ -1,6 +1,7 @@
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from .serializers import ImageSerializer, ImageUploadSerializer
 from .models import Image
 from PIL import Image as PILImage
@@ -15,6 +16,8 @@ from datetime import datetime
 
 
 class ImageUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, format=None):
         serializer = ImageUploadSerializer(data=request.data)
         if serializer.is_valid():
@@ -27,7 +30,7 @@ class ImageUploadView(APIView):
             response_data.update(thumbnail_urls)
             # Generate expiring link if link is enabled
             if request.user.tier.expiring_link_enabled: 
-                expiration_time = serializer.validated_data.get('expiration_time', 300)
+                expiration_time = request.data.get('expiration_time', 300)
                 link = self.generate_expiring_link(image, expiration_time)
                 response_data['expiration_link'] = link
             # Delete the original file if link not enabled
@@ -58,7 +61,7 @@ class ImageUploadView(APIView):
 
         # Create a new Image instance and save the file to it
         thumbnail = Image(user=image.user)
-        filename_base, filename_ext = os.path.splitext(image.file.name)
+        filename_base, filename_ext = os.path.splitext(os.path.basename(image.file.name))
         file_name = f'{filename_base}_thumbnail_{size}{filename_ext}'
         thumbnail.file.save(file_name, ContentFile(thumbnail_io.getvalue()), save=False)
         thumbnail.save()

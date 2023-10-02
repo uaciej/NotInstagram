@@ -4,7 +4,7 @@ from .models import Image
 class ImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        fields = ['file', 'expiration_time']
+        fields = ['file']
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
