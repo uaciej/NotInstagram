@@ -86,7 +86,7 @@ class UserImagesList(generics.ListAPIView):
     serializer_class = ImageSerializer
 
     def get_queryset(self):
-        return Image.objects.filter(user=self.request.user)
+        return Image.objects.filter(user=self.request.user).exclude(file__isnull=True).exclude(file='')
 
 
 def signed_image_view(request, signed_value):
