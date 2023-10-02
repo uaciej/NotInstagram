@@ -4,8 +4,8 @@ from django.db import migrations, models
 import django.utils.timezone
 
 def create_predefined_tiers(apps, schema_editor):    
-    Tier.objects.get_or_create(name='Basic', thumbnail_sizes='200', link_enabled=True, expiring_link_enabled=True)
-    Tier.objects.get_or_create(name='Premium', thumbnail_sizes='200,400', link_enabled=True, expiring_link_enabled=True)
+    Tier.objects.get_or_create(name='Basic', thumbnail_sizes='200', link_enabled=False, expiring_link_enabled=False)
+    Tier.objects.get_or_create(name='Premium', thumbnail_sizes='200,400', link_enabled=True, expiring_link_enabled=False)
     Tier.objects.get_or_create(name='Enterprise', thumbnail_sizes='200,400', link_enabled=True, expiring_link_enabled=True)
 
 
