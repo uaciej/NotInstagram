@@ -2,7 +2,6 @@ FROM python:3.11
 
 ENV PYTHONBUFFERED=1
 
-
 WORKDIR /app
 
 COPY requirements.txt requirements.txt
