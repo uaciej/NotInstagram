@@ -128,6 +128,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Image files folder
+image_files/
+
 # Spyder project settings
 .spyderproject
 .spyproject
