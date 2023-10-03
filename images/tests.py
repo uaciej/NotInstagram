@@ -96,8 +96,7 @@ class UserImagesListTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Check that the response data contains the image
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["id"], image.id)
+        self.assertEqual(response.data['results'][0]['file'].split('/media/')[1], str(image.file))
 
     def tearDown(self):
         # Delete any images that were created
