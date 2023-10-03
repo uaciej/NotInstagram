@@ -1,22 +1,23 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import ImageSerializer, ImageUploadSerializer
 from .models import Image
+from not_instagram.settings import BASE_DIR
 from PIL import Image as PILImage
 from django.core import signing
 from django.urls import reverse
 from django.core.files.base import ContentFile
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, FileResponse
 from django.shortcuts import get_object_or_404
 from io import BytesIO
 import os
 from datetime import datetime, timedelta
 
 
-class ImageUploadView(APIView):
+class ImageUploadView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ImageUploadSerializer
 
     def post(self, request, format=None):
         serializer = ImageUploadSerializer(data=request.data)
@@ -44,19 +45,21 @@ class ImageUploadView(APIView):
             # Delete the original file if link not enabled
             if not request.user.tier.link_enabled:
                 os.remove(image.file.path)
-                image.file = None
-                image.save()
+                image.delete()
                 del response_data["file"]
+
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def create_thumbnails(self, image):
         user_tier = image.user.tier
-        thumbnail_sizes = user_tier.thumbnail_sizes.split(",")
+        thumbnail_sizes = user_tier.thumbnail_sizes
         thumbnail_urls = {}
-        for size in thumbnail_sizes:
-            url = self.create_thumbnail(image, int(size))
-            thumbnail_urls[f"url_{size}"] = url
+        if thumbnail_sizes:  # Check if thumbnail_sizes is not empty
+            thumbnail_sizes = thumbnail_sizes.split(",")
+            for size in thumbnail_sizes:
+                url = self.create_thumbnail(image, int(size))
+                thumbnail_urls[f"url_{size}"] = url
         return thumbnail_urls
 
     def create_thumbnail(self, image, size):
@@ -84,8 +87,13 @@ class ImageUploadView(APIView):
         # Create a signer
         signer = signing.TimestampSigner()
 
-        # Sign the image id along with the expiration time
-        value = f"{image.id}:{expiration_time}"
+        # Calculate the expiration timestamp
+        expiration_timestamp = (
+            datetime.now() + timedelta(seconds=expiration_time)
+        ).timestamp()
+
+        # Sign the image id along with the expiration timestamp
+        value = f"{image.id}:{expiration_timestamp}"
         signed_value = signer.sign(value)
 
         # Generate the URL for the view that will handle the signed link
@@ -105,6 +113,13 @@ class UserImagesList(generics.ListAPIView):
         )
 
 
+def image_view(request, filename):
+    print(filename)
+    image = get_object_or_404(Image, file=f"image_files/{filename}")
+    print(image)
+    return FileResponse(open(os.path.join(BASE_DIR, image.file.path), "rb"))
+
+
 def signed_image_view(request, signed_value):
     # Create a signer
     signer = signing.TimestampSigner()
@@ -116,10 +131,10 @@ def signed_image_view(request, signed_value):
         raise Http404("Invalid link")
 
     # Split the value into the image id and the expiration time
-    image_id, expiration_time = value.split(":")
+    image_id, expiration_timestamp = value.split(":")
 
     # Check if the link has expired
-    expiration_time = datetime.now() + timedelta(seconds=int(expiration_time))
+    expiration_time = datetime.fromtimestamp(float(expiration_timestamp))
     if datetime.now() > expiration_time:
         raise Http404("Expired link")
 
