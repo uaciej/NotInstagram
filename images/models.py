@@ -9,5 +9,8 @@ class Image(models.Model):
         get_user_model(), related_name="images", on_delete=models.CASCADE
     )
 
+    class Meta:
+        ordering = ['uploaded_at']
+
     def __str__(self):
         return f"Image {self.id} - User {self.user.email}"
